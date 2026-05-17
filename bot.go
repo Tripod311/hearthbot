@@ -18,7 +18,6 @@ type BotClient struct {
     token string
 
     Topics []TopicDescription
-    ConnectedTopics map[int]TopicConnection
 
     Hooks BotHooks
 }
@@ -26,8 +25,6 @@ type BotClient struct {
 type BotHooks struct {
     OnLoginSuccess func()
     OnLoginError   func(error)
-    OnTopicEnter  func(string)
-    OnTopicLeave  func(string)
     OnError       func(error)
 }
 
