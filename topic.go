@@ -1,46 +1,12 @@
 package hearthbot
 
 import (
-	"sync"
 	"fmt"
 	"net/url"
 	"net/http"
 	"encoding/json"
 	"github.com/gorilla/websocket"
 )
-
-type TopicMessage struct {
-	Id int					`json:"id"`
-	Content string			`json:"content"`
-	Attachments []string	`json:"attachments"`
-	ActorId int				`json:"actor_id"`
-	DisplayName string		`json:"display_name"`
-	CreatedAt int			`json:"created_at"`
-	IsGuest bool 			`json:"is_guest"`
-}
-
-type TopicConnection struct {
-	conn *websocket.Conn
-	initialized bool
-	Messages []TopicMessage
-	StorageLimit uint
-	password string
-
-	closed bool
-	done chan struct{}
-
-	mu sync.Mutex
-	closeOnce sync.Once
-	send chan WSPacket
-
-	Info TopicInfo
-	Hooks TopicHooks
-}
-
-type TopicHooks struct {
-	OnMessage func(*TopicConnection, *TopicMessage)
-	OnClose func(*TopicConnection, error)
-}
 
 type wsRequest struct {
 	TopicNode string `json:"topic_node"`
@@ -122,13 +88,14 @@ func (b *BotClient) ConnectTopic (id int, password string) (*TopicConnection, er
 	topic := TopicConnection{
 		conn: conn,
 		initialized: false,
-		Messages: make([]TopicMessage, 0),
-		StorageLimit: 0,
 		password: password,
 
 		closed: false,
 		done: make(chan struct{}),
 		send: make(chan WSPacket, 64),
+		authorized: make(chan bool),
+
+		pendingChunk: make(chan MessageChunk, 1),
 
 		Info: TopicInfo{},
 		Hooks: TopicHooks{},
